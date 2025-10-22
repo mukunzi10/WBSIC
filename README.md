@@ -57,7 +57,7 @@ WBSIC/
 
 ---
 
-## 🧩 Features by Group (Epics)
+##  Features by Group (Epics)
 
 | Group | Epic | Description |
 |-------|------|--------------|
