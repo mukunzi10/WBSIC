@@ -83,3 +83,4 @@ coverage-final.json
 # Local database files
 *.mysql
 *.sqlite3
+* .sql
