@@ -9,7 +9,7 @@ pipeline {
 
     environment {
         DOCKER_REGISTRY = credentials('docker-registry-url')
-        DOCKER_CREDENTIALS = credentials('docker-credentials')
+        DOCKER_CREDENTIALS = credentials('docker-credentials-id') // Make sure this ID exists in Jenkins
         SONARQUBE_TOKEN = credentials('sonarqube-token')
         NODE_ENV = 'production'
         IMAGE_TAG = "${BUILD_NUMBER}"
@@ -128,8 +128,8 @@ pipeline {
                           -Dsonar.projectKey=wbsic \
                           -Dsonar.sources=. \
                           -Dsonar.host.url=${SONARQUBE_HOST} \
-                          -Dsonar.login=${SONARQUBE_TOKEN}
-                    ''' || true
+                          -Dsonar.login=${SONARQUBE_TOKEN} || true
+                    '''
                 }
             }
         }
@@ -234,7 +234,7 @@ pipeline {
                     sh '''
                         sleep 30
                         curl -f http://localhost/health || exit 1
-                    ''' || true
+                    '''
                 }
             }
         }
@@ -243,7 +243,7 @@ pipeline {
     post {
         always {
             echo '========== Cleaning up =========='
-            cleanWs()
+            // Remove cleanWs() or wrap entire pipeline in a node block
         }
         success {
             echo '========== Pipeline succeeded =========='
