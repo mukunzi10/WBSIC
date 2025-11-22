@@ -1,9 +1,9 @@
-# InsurancesM
+# WBSIC
 Web Based system for insurance companies in Rwanda
 
 #  Web-Based System for Insurance Companies (WBSIC)
 
-A scalable **web application** for managing insurance company operations — including **customer management**, **policy handling**, **claims processing**, **billing**, and **analytics** — built with **Node.js** (backend) and **React.js** (frontend).  
+A scalable **web application** for managing insurance company operations  including **customer management**, **policy handling**, **claims processing**, **billing**, and **analytics** built with **Node.js** (backend) and **React.js** (frontend).  
 
 This project also integrates a **complete DevOps pipeline** using **Docker**, **Jenkins**, **Kubernetes**, **Helm**, **GitHub Actions**, and **Ansible** to automate deployment and scaling.
 
