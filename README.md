@@ -17,7 +17,7 @@ This project also integrates a **complete DevOps pipeline** using **Docker**, **
 -   Axios for API calls
 -   JWT Authentication
 
-### Backend
+### insurance-backend
 -   **Node.js** with **Express**
 -   **MongoDB** / PostgreSQL (configurable)
 -   **Passport.js** for authentication
@@ -38,12 +38,12 @@ This project also integrates a **complete DevOps pipeline** using **Docker**, **
 
 ```bash
 WBSIC/
-├── client/                 # React.js frontend
+├── frontend/                 # React.js frontend
 │   ├── src/
 │   ├── public/
 │   └── package.json
 │
-├── server/                 # Node.js backend
+├── insurance-backend/                 # Node.js backend
 │   ├── src/
 │   ├── routes/
 │   ├── models/
