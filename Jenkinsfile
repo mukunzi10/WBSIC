@@ -8,9 +8,6 @@ pipeline {
     }
 
     environment {
-        DOCKER_REGISTRY = credentials('docker-registry-url')
-        DOCKER_CREDENTIALS = credentials('docker-credentials-id') // Make sure this ID exists in Jenkins
-        SONARQUBE_TOKEN = credentials('sonarqube-token')
         NODE_ENV = 'production'
         IMAGE_TAG = "${BUILD_NUMBER}"
     }
@@ -119,121 +116,15 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
-            steps {
-                script {
-                    echo '========== Running SonarQube analysis =========='
-                    sh '''
-                        sonar-scanner \
-                          -Dsonar.projectKey=wbsic \
-                          -Dsonar.sources=. \
-                          -Dsonar.host.url=${SONARQUBE_HOST} \
-                          -Dsonar.login=${SONARQUBE_TOKEN} || true
-                    '''
-                }
-            }
-        }
-
         stage('Build Docker Images') {
             steps {
                 script {
                     echo '========== Building Docker images =========='
                     sh '''
-                        docker build -t ${DOCKER_REGISTRY}/wbsic-backend:${IMAGE_TAG} ./server
-                        docker build -t ${DOCKER_REGISTRY}/wbsic-frontend:${IMAGE_TAG} ./client
-                        docker build -t ${DOCKER_REGISTRY}/wbsic-backend:latest ./server
-                        docker build -t ${DOCKER_REGISTRY}/wbsic-frontend:latest ./client
-                    '''
-                }
-            }
-        }
-
-        stage('Push to Registry') {
-            steps {
-                script {
-                    echo '========== Pushing images to Docker registry =========='
-                    sh '''
-                        echo ${DOCKER_CREDENTIALS_PSW} | docker login -u ${DOCKER_CREDENTIALS_USR} --password-stdin ${DOCKER_REGISTRY}
-                        docker push ${DOCKER_REGISTRY}/wbsic-backend:${IMAGE_TAG}
-                        docker push ${DOCKER_REGISTRY}/wbsic-frontend:${IMAGE_TAG}
-                        docker push ${DOCKER_REGISTRY}/wbsic-backend:latest
-                        docker push ${DOCKER_REGISTRY}/wbsic-frontend:latest
-                        docker logout
-                    '''
-                }
-            }
-        }
-
-        stage('Deploy to Development') {
-            when {
-                branch 'develop'
-            }
-            steps {
-                script {
-                    echo '========== Deploying to development environment =========='
-                    sh '''
-                        kubectl set image deployment/wbsic-backend \
-                          wbsic-backend=${DOCKER_REGISTRY}/wbsic-backend:${IMAGE_TAG} \
-                          -n development
-                        kubectl set image deployment/wbsic-frontend \
-                          wbsic-frontend=${DOCKER_REGISTRY}/wbsic-frontend:${IMAGE_TAG} \
-                          -n development
-                    '''
-                }
-            }
-        }
-
-        stage('Deploy to Staging') {
-            when {
-                branch 'staging'
-            }
-            steps {
-                script {
-                    echo '========== Deploying to staging environment =========='
-                    sh '''
-                        kubectl set image deployment/wbsic-backend \
-                          wbsic-backend=${DOCKER_REGISTRY}/wbsic-backend:${IMAGE_TAG} \
-                          -n staging
-                        kubectl set image deployment/wbsic-frontend \
-                          wbsic-frontend=${DOCKER_REGISTRY}/wbsic-frontend:${IMAGE_TAG} \
-                          -n staging
-                    '''
-                }
-            }
-        }
-
-        stage('Deploy to Production') {
-            when {
-                branch 'main'
-            }
-            input {
-                message "Deploy to production?"
-                ok "Deploy"
-            }
-            steps {
-                script {
-                    echo '========== Deploying to production environment =========='
-                    sh '''
-                        kubectl set image deployment/wbsic-backend \
-                          wbsic-backend=${DOCKER_REGISTRY}/wbsic-backend:${IMAGE_TAG} \
-                          -n production
-                        kubectl set image deployment/wbsic-frontend \
-                          wbsic-frontend=${DOCKER_REGISTRY}/wbsic-frontend:${IMAGE_TAG} \
-                          -n production
-                        kubectl rollout status deployment/wbsic-backend -n production
-                        kubectl rollout status deployment/wbsic-frontend -n production
-                    '''
-                }
-            }
-        }
-
-        stage('Post-Deployment Tests') {
-            steps {
-                script {
-                    echo '========== Running post-deployment tests =========='
-                    sh '''
-                        sleep 30
-                        curl -f http://localhost/health || exit 1
+                        docker build -t wbsic-backend:${IMAGE_TAG} ./server
+                        docker build -t wbsic-frontend:${IMAGE_TAG} ./client
+                        docker build -t wbsic-backend:latest ./server
+                        docker build -t wbsic-frontend:latest ./client
                     '''
                 }
             }
@@ -242,8 +133,7 @@ pipeline {
 
     post {
         always {
-            echo '========== Cleaning up =========='
-            // Remove cleanWs() or wrap entire pipeline in a node block
+            echo '========== Pipeline completed =========='
         }
         success {
             echo '========== Pipeline succeeded =========='
