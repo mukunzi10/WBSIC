@@ -1,0 +1,49 @@
+- name: Create logging namespace
+  kubernetes.core.k8s:
+    name: logging
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Add Elastic Helm repository
+  community.kubernetes.helm_repository:
+    name: elastic
+    repo_url: https://helm.elastic.co
+
+- name: Install Elasticsearch
+  community.kubernetes.helm:
+    name: elasticsearch
+    chart_ref: elastic/elasticsearch
+    release_namespace: logging
+    values:
+      replicas: 3
+      volumeClaimTemplate:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 30Gi
+
+- name: Install Kibana
+  community.kubernetes.helm:
+    name: kibana
+    chart_ref: elastic/kibana
+    release_namespace: logging
+    values:
+      service:
+        type: LoadBalancer
+        port: 5601
+
+- name: Install Filebeat
+  community.kubernetes.helm:
+    name: filebeat
+    chart_ref: elastic/filebeat
+    release_namespace: logging
+    values:
+      filebeatConfig:
+        filebeat.yml: |
+          filebeat.inputs:
+          - type: container
+            paths:
+              - '/var/lib/docker/containers/*/*.log'
+          output.elasticsearch:
+            hosts: ["elasticsearch:9200"]

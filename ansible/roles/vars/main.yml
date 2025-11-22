@@ -1,0 +1,5 @@
+kubeconfig_source: /path/to/kubeconfig
+grafana_admin_password: "{{ vault_grafana_password }}"
+docker_users:
+  - ubuntu
+  - jenkins

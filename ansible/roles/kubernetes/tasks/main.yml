@@ -1,0 +1,35 @@
+- name: Install kubectl
+  shell: |
+    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+    chmod +x kubectl
+    sudo mv kubectl /usr/local/bin/
+  args:
+    creates: /usr/local/bin/kubectl
+
+- name: Install kubeadm
+  shell: |
+    curl -LO https://dl.k8s.io/release/$(curl -LS https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubeadm
+    chmod +x kubeadm
+    sudo mv kubeadm /usr/local/bin/
+  args:
+    creates: /usr/local/bin/kubeadm
+
+- name: Install kubelet
+  shell: |
+    curl -LO https://dl.k8s.io/release/$(curl -LS https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubelet
+    chmod +x kubelet
+    sudo mv kubelet /usr/local/bin/
+  args:
+    creates: /usr/local/bin/kubelet
+
+- name: Create kubeconfig directory
+  file:
+    path: ~/.kube
+    state: directory
+
+- name: Copy kubeconfig
+  copy:
+    src: "{{ kubeconfig_source }}"
+    dest: ~/.kube/config
+    mode: 0600
+  when: kubeconfig_source is defined

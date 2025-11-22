@@ -1,0 +1,203 @@
+# ============================================
+# ENVIRONMENT & SECRETS
+# ============================================
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+*.pem
+*.key
+*.cert
+
+# ============================================
+# DEPENDENCIES
+# ============================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ============================================
+# LOGS
+# ============================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# ============================================
+# UPLOADS & USER CONTENT
+# ============================================
+uploads/
+temp/
+tmp/
+*.tmp
+
+# Keep the directory structure but ignore contents
+!uploads/.gitkeep
+!temp/.gitkeep
+
+# ============================================
+# DATABASE
+# ============================================
+*.sqlite
+*.sqlite3
+*.db
+data/
+dump/
+
+# ============================================
+# TESTING
+# ============================================
+coverage/
+.nyc_output/
+*.lcov
+.jest/
+.test-results/
+
+# ============================================
+# BUILD & DIST
+# ============================================
+dist/
+build/
+out/
+.next/
+.nuxt/
+.cache/
+.parcel-cache/
+
+# ============================================
+# IDE & EDITOR
+# ============================================
+# VSCode
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+*.code-workspace
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+
+# ============================================
+# OPERATING SYSTEM
+# ============================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# ============================================
+# BACKUP FILES
+# ============================================
+backups/
+*.backup
+*.bak
+*.old
+*.orig
+
+# ============================================
+# DOCUMENTATION
+# ============================================
+# Ignore generated docs but keep source
+docs/generated/
+*.pdf
+# !docs/**/*.pdf  # Uncomment to keep specific PDFs
+
+# ============================================
+# REPORTS
+# ============================================
+reports/
+*.report
+*.csv
+*.xlsx
+
+# ============================================
+# SECURITY & AUDIT
+# ============================================
+.npm/
+.eslintcache
+.node_repl_history
+*.tsbuildinfo
+
+# ============================================
+# MISC
+# ============================================
+.cache/
+.temp/
+*.seed
+*.pid
+*.pid.lock
+.grunt/
+bower_components/
+.lock-wscript/
+.serverless/
+.fusebox/
+.dynamodb/
+.tern-port
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# ============================================
+# OPTIONAL: Development Tools
+# ============================================
+# Uncomment if using these tools
+# .husky/
+# .eslintcache
+# .stylelintcache
+# .prettierignore
