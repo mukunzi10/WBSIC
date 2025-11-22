@@ -1,29 +1,37 @@
-// forgot password logic 
-// send_token.js
-// This module generates a simple token and "sends" it (console or email)
+// forgot_password.js
+// Handles forgot password requests
 
-const crypto = require('crypto');
+const { generateToken, sendToken } = require('./send_token');
 
-/**
- * Generate a random token
- * @param {number} length - token length
- * @returns {string} - random token
- */
-function generateToken(length = 6) {
-    // Generate random bytes, convert to hex, slice to desired length
-    return crypto.randomBytes(length).toString('hex').slice(0, length);
-}
+// Simulate a "users database" (replace with real DB in production)
+const usersDB = [
+    { email: 'user1@example.com' },
+    { email: 'user2@example.com' },
+];
 
 /**
- * Send token to user
- * @param {string} email - user's email
- * @param {string} token - token to send
+ * Handle forgot password
+ * @param {string} email
  */
-function sendToken(email, token) {
-    // For now, just print to console
-    console.log(`Sending token to ${email}: ${token}`);
+function forgotPassword(email) {
+    // Check if user exists
+    const user = usersDB.find(u => u.email === email);
+    if (!user) {
+        console.log('Email not found in the database');
+        return;
+    }
 
-    // TODO: integrate with real email service like Nodemailer or SendGrid
+    // Generate a token
+    const token = generateToken(6);
+
+    // Send token
+    sendToken(email, token);
+
+    console.log(`Password reset token sent to ${email}`);
 }
 
-module.exports = { generateToken, sendToken };
+// Example usage
+const emailToReset = 'user1@example.com';
+forgotPassword(emailToReset);
+
+module.exports = { forgotPassword };
