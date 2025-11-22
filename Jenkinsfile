@@ -7,7 +7,6 @@ pipeline {
         timestamps()
     }
 
-hermogene2001
     environment {
         DOCKER_REGISTRY = credentials('docker-registry-url')
         DOCKER_CREDENTIALS = credentials('docker-credentials')
