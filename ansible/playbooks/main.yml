@@ -1,0 +1,284 @@
+- name: Infrastructure Setup and Configuration
+  hosts: all
+  gather_facts: yes
+  # Don't use become at playbook level - use it per task
+  
+  vars_files:
+    - ../vars/main.yml
+  
+  pre_tasks:
+    - name: Display system information
+      debug:
+        msg: |
+          System: {{ ansible_distribution }} {{ ansible_distribution_version }}
+          Hostname: {{ ansible_hostname }}
+          Python: {{ ansible_python_version }}
+
+    - name: Update system packages (Debian/Ubuntu)
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+      ignore_errors: yes
+
+    - name: Install basic utilities
+      package:
+        name:
+          - curl
+          - wget
+          - git
+          - htop
+          - net-tools
+          - vim
+          - tmux
+        state: present
+      ignore_errors: yes
+
+  tasks:
+    # ==================== DOCKER INSTALLATION ====================
+    - name: Docker - Remove conflicting keyring file
+      file:
+        path: /etc/apt/keyrings/docker.asc
+        state: absent
+      when: ansible_os_family == "Debian"
+      tags: docker
+
+    - name: Docker - Remove old repository sources
+      shell: |
+        rm -f /etc/apt/sources.list.d/docker.list
+        rm -f /etc/apt/sources.list.d/docker*.sources
+      when: ansible_os_family == "Debian"
+      tags: docker
+
+    - name: Docker - Clean apt cache
+      shell: apt-get clean && apt-get autoclean
+      ignore_errors: yes
+      when: ansible_os_family == "Debian"
+      tags: docker
+
+    - name: Docker - Create keyrings directory
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+      when: ansible_os_family == "Debian"
+      tags: docker
+
+    - name: Docker - Download and install GPG key
+      shell: |
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+        chmod a+r /etc/apt/keyrings/docker.gpg
+      when: ansible_os_family == "Debian"
+      tags: docker
+
+    - name: Docker - Add repository with proper keyring
+      shell: |
+        echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+      when: ansible_os_family == "Debian"
+      tags: docker
+
+    - name: Docker - Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 0
+      when: ansible_os_family == "Debian"
+      tags: docker
+
+    - name: Docker - Install dependencies
+      package:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+        state: present
+      when: ansible_os_family == "Debian"
+      tags: docker
+
+    - name: Docker - Install packages
+      package:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+        state: present
+      when: ansible_os_family == "Debian"
+      tags: docker
+
+    - name: Docker - Start service
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+      tags: docker
+
+    - name: Docker - Create group
+      group:
+        name: docker
+        state: present
+      tags: docker
+
+    - name: Docker - Add user to group
+      user:
+        name: "{{ item }}"
+        groups: docker
+        append: yes
+      loop: "{{ docker_users | default(['ubuntu']) }}"
+      tags: docker
+
+    - name: Docker - Configure daemon
+      copy:
+        dest: /etc/docker/daemon.json
+        content: |
+          {
+            "storage-driver": "overlay2",
+            "log-driver": "json-file",
+            "log-opts": {
+              "max-size": "10m",
+              "max-file": "3"
+            },
+            "live-restore": true
+          }
+      notify: restart docker
+      tags: docker
+
+    - name: Docker - Verify installation
+      command: docker --version
+      register: docker_version
+      changed_when: false
+      tags: docker
+
+    - name: Docker - Display version
+      debug:
+        msg: "Docker installed: {{ docker_version.stdout }}"
+      tags: docker
+
+    # ==================== KUBERNETES INSTALLATION ====================
+    - name: Kubernetes - Disable swap
+      shell: swapoff -a
+      ignore_errors: yes
+      tags: kubernetes
+
+    - name: Kubernetes - Remove swap from fstab
+      lineinfile:
+        path: /etc/fstab
+        regexp: '.*swap.*'
+        state: absent
+      tags: kubernetes
+
+    - name: Kubernetes - Create keyrings directory
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+      when: ansible_os_family == "Debian"
+      tags: kubernetes
+
+    - name: Kubernetes - Add GPG key
+      shell: |
+        curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg
+        chmod a+r /etc/apt/keyrings/kubernetes-archive-keyring.gpg
+      args:
+        creates: /etc/apt/keyrings/kubernetes-archive-keyring.gpg
+      when: ansible_os_family == "Debian"
+      tags: kubernetes
+
+    - name: Kubernetes - Remove old repository (if exists)
+      file:
+        path: /etc/apt/sources.list.d/kubernetes.list
+        state: absent
+      when: ansible_os_family == "Debian"
+      tags: kubernetes
+
+    - name: Kubernetes - Add repository
+      shell: |
+        echo "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list
+      when: ansible_os_family == "Debian"
+      tags: kubernetes
+
+    - name: Kubernetes - Update apt cache
+      apt:
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+      tags: kubernetes
+
+    - name: Kubernetes - Install packages
+      package:
+        name:
+          - kubectl
+          - kubeadm
+          - kubelet
+        state: present
+      when: ansible_os_family == "Debian"
+      tags: kubernetes
+
+    - name: Kubernetes - Enable kubelet
+      systemd:
+        name: kubelet
+        enabled: yes
+      tags: kubernetes
+
+    - name: Kubernetes - Create .kube directory
+      file:
+        path: /home/{{ item }}/.kube
+        state: directory
+        owner: "{{ item }}"
+        group: "{{ item }}"
+        mode: '0755'
+      loop: "{{ docker_users | default(['ubuntu']) }}"
+      ignore_errors: yes
+      tags: kubernetes
+
+    - name: Kubernetes - Load br_netfilter module
+      modprobe:
+        name: br_netfilter
+        state: present
+      tags: kubernetes
+
+    - name: Kubernetes - Configure sysctl
+      sysctl:
+        name: "{{ item.key }}"
+        value: "{{ item.value }}"
+        sysctl_set: yes
+        state: present
+        reload: yes
+      loop:
+        - { key: "net.bridge.bridge-nf-call-iptables", value: "1" }
+        - { key: "net.bridge.bridge-nf-call-ip6tables", value: "1" }
+        - { key: "net.ipv4.ip_forward", value: "1" }
+      tags: kubernetes
+
+    - name: Kubernetes - Verify installation
+      command: kubectl version --client
+      register: kubectl_version
+      changed_when: false
+      ignore_errors: yes
+      tags: kubernetes
+
+    - name: Kubernetes - Display version
+      debug:
+        msg: "{{ kubectl_version.stdout }}"
+      when: kubectl_version.rc == 0
+      tags: kubernetes
+
+  post_tasks:
+    - name: Summary
+      debug:
+        msg: |
+          ========================================
+          Infrastructure Setup Complete!
+          ========================================
+          Docker: {{ 'Installed ✓' if docker_version.rc == 0 else 'Not installed ✗' }}
+          Kubernetes: {{ 'Installed ✓' if kubectl_version.rc == 0 else 'Not installed ✗' }}
+          Hostname: {{ ansible_hostname }}
+          OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
+          ========================================
+
+  handlers:
+    - name: restart docker
+      systemd:
+        name: docker
+        state: restarted
+        daemon_reload: yes

@@ -1,5 +1,29 @@
-kubeconfig_source: /path/to/kubeconfig
-grafana_admin_password: "{{ vault_grafana_password }}"
+
+
+# Docker Configuration
 docker_users:
   - ubuntu
   - jenkins
+
+# Kubernetes Configuration
+kubernetes_version: "1.28"
+kubeadm_version: "1.28.0"
+
+# Monitoring Configuration
+grafana_admin_password: "admin123"
+prometheus_retention: 30d
+prometheus_storage: 50Gi
+
+# Logging Configuration
+elasticsearch_replicas: 1
+elasticsearch_storage: 30Gi
+kibana_port: 5601
+
+# General Configuration
+system_timezone: UTC
+system_locale: en_US.UTF-8
+
+# Network Configuration
+dns_servers:
+  - 8.8.8.8
+  - 8.8.4.4

@@ -1,16 +1,27 @@
+
+- name: Check if kubectl is available
+  command: kubectl version --client
+  register: kubectl_check
+  ignore_errors: yes
+  changed_when: false
+
 - name: Create monitoring namespace
   kubernetes.core.k8s:
     name: monitoring
     api_version: v1
     kind: Namespace
     state: present
+  when: kubectl_check.rc == 0
+  ignore_errors: yes
 
 - name: Add Prometheus Helm repository
   community.kubernetes.helm_repository:
     name: prometheus-community
     repo_url: https://prometheus-community.github.io/helm-charts
+  when: kubectl_check.rc == 0
+  ignore_errors: yes
 
-- name: Install Prometheus
+- name: Install Prometheus using Helm
   community.kubernetes.helm:
     name: prometheus
     chart_ref: prometheus-community/kube-prometheus-stack
@@ -27,19 +38,26 @@
                 resources:
                   requests:
                     storage: 50Gi
+  when: kubectl_check.rc == 0
+  ignore_errors: yes
 
 - name: Add Grafana Helm repository
   community.kubernetes.helm_repository:
     name: grafana
     repo_url: https://grafana.github.io/helm-charts
+  when: kubectl_check.rc == 0
+  ignore_errors: yes
 
-- name: Install Grafana
+- name: Install Grafana using Helm
   community.kubernetes.helm:
     name: grafana
     chart_ref: grafana/grafana
     release_namespace: monitoring
+    create_namespace: yes
     values:
-      adminPassword: "{{ grafana_admin_password }}"
+      adminPassword: "{{ grafana_admin_password | default('admin123') }}"
+      service:
+        type: LoadBalancer
       datasources:
         datasources.yaml:
           apiVersion: 1
@@ -47,3 +65,12 @@
             - name: Prometheus
               type: prometheus
               url: http://prometheus-operated:9090
+              access: proxy
+              isDefault: true
+  when: kubectl_check.rc == 0
+  ignore_errors: yes
+
+- name: Display monitoring setup status
+  debug:
+    msg: "Monitoring stack installation initiated. Check with: kubectl get all -n monitoring"
+  when: kubectl_check.rc == 0

@@ -1,35 +1,104 @@
+
+- name: Disable swap for Kubernetes
+  shell: swapoff -a
+  ignore_errors: yes
+
+- name: Remove swap from fstab
+  lineinfile:
+    path: /etc/fstab
+    regexp: '.*swap.*'
+    state: absent
+
+- name: Add Kubernetes GPG key
+  apt_key:
+    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Add Kubernetes repository
+  apt_repository:
+    repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+  when: ansible_os_family == "Debian"
+
 - name: Install kubectl
-  shell: |
-    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-    chmod +x kubectl
-    sudo mv kubectl /usr/local/bin/
-  args:
-    creates: /usr/local/bin/kubectl
+  package:
+    name: kubectl
+    state: present
+  when: ansible_os_family == "Debian"
 
 - name: Install kubeadm
-  shell: |
-    curl -LO https://dl.k8s.io/release/$(curl -LS https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubeadm
-    chmod +x kubeadm
-    sudo mv kubeadm /usr/local/bin/
-  args:
-    creates: /usr/local/bin/kubeadm
+  package:
+    name: kubeadm
+    state: present
+  when: ansible_os_family == "Debian"
 
 - name: Install kubelet
-  shell: |
-    curl -LO https://dl.k8s.io/release/$(curl -LS https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubelet
-    chmod +x kubelet
-    sudo mv kubelet /usr/local/bin/
-  args:
-    creates: /usr/local/bin/kubelet
+  package:
+    name: kubelet
+    state: present
+  when: ansible_os_family == "Debian"
 
-- name: Create kubeconfig directory
+- name: Enable kubelet service
+  systemd:
+    name: kubelet
+    enabled: yes
+
+- name: Create .kube directory
   file:
-    path: ~/.kube
+    path: /home/{{ item }}/.kube
     state: directory
+    owner: "{{ item }}"
+    group: "{{ item }}"
+    mode: '0755'
+  loop: "{{ ansible_user_id }}"
+  ignore_errors: yes
 
-- name: Copy kubeconfig
-  copy:
-    src: "{{ kubeconfig_source }}"
-    dest: ~/.kube/config
-    mode: 0600
-  when: kubeconfig_source is defined
+- name: Verify kubectl installation
+  command: kubectl version --client
+  register: kubectl_version
+  changed_when: false
+
+- name: Display Kubernetes version
+  debug:
+    msg: "{{ kubectl_version.stdout }}"
+
+- name: Load br_netfilter module
+  modprobe:
+    name: br_netfilter
+    state: present
+
+- name: Configure sysctl for Kubernetes
+  sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_set: yes
+    state: present
+    reload: yes
+  loop:
+    - { key: "net.bridge.bridge-nf-call-iptables", value: "1" }
+    - { key: "net.bridge.bridge-nf-call-ip6tables", value: "1" }
+    - { key: "net.ipv4.ip_forward", value: "1" }
+
+- name: Install Helm
+  shell: |
+    curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+  args:
+    creates: /usr/local/bin/helm
+  ignore_errors: yes
+
+- name: Verify Helm installation
+  command: helm version
+  register: helm_version
+  changed_when: false
+  ignore_errors: yes
+
+- name: Display Helm version
+  debug:
+    msg: "{{ helm_version.stdout }}"
+  when: helm_version.rc == 0
